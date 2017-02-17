@@ -1,44 +1,47 @@
 import bpy
 import sys
-sys.path.insert(0, r"C:\Users\Mark\Desktop\Blender\CS 499 - Senior Project_files\Python_Files")
+sys.path.insert(0, r"C:\Users\Mark\Desktop\Blender\Senior_Project_files\Python_Files")
 import Addon_Model
 
-class View3DPanel():
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = 'Materials Addon'
-
-    @classmethod
-    def poll(cls, context):
-        return (context.object is not None)
-
-
-class PanelOne(View3DPanel, bpy.types.Panel):
-    bl_idname = "VIEW3D_PT_test_1"
-    bl_label = "Panel One"
-    #either DEFAULT_CLOSED to be collapsed upon creation, or HIDE_HEADER to hide header upon creation
-    bl_options = {'HIDE_HEADER'}
-
+class addon_menu(bpy.types.Menu):
+    bl_label = "Material Lib"
+    bl_idname = "OBJECT_MT_custom_menu"
+    
     def draw(self, context):
         layout = self.layout
-
-        layout.label("Add Materials")
+        mats = bpy.data.materials
+        
         layout.operator("addmaterial.glass")
         layout.operator("addmaterial.stone")
         layout.operator("addmaterial.skin")
         layout.operator("addmaterial.metal")
         layout.operator("addmaterial.car")
         layout.operator("addmaterial.sand")
+        layout.operator("addmaterial.rubber")
+        layout.operator("addmaterial.snow")
         layout.operator("addmaterial.image")
+        Addon_Model.add_icon(layout)
 
+class PanelOne(bpy.types.Panel):
+    bl_label = "Materials Library"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_category = "Material Library"
 
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("object.new")
+        if (bpy.data.materials.values() != []):
+            layout.menu(addon_menu.bl_idname, icon_value=layout.icon(context.object.active_material))
+        else:
+            layout.operator("addmaterial.default")
+            
+            
 def register():
     bpy.utils.register_class(PanelOne)
 def unregister():
     bpy.utils.register_class(PanelOne)
-        
-#def unregister():
-#    bpy.utils.unregister_class(PanelOne)
+    
 
 class OBJECT_OT_Button(bpy.types.Operator):
     bl_idname = "addmaterial.glass"
@@ -86,10 +89,33 @@ class OBJECT_OT_Button(bpy.types.Operator):
         Addon_Model.create_sand_material()
         return{'FINISHED'}    
 class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.rubber"
+    bl_label = "Rubber Material"
+
+    def execute(self, context):
+        Addon_Model.create_rubber_material()
+        return{'FINISHED'}
+class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.snow"
+    bl_label = "Snow Material"
+
+    def execute(self, context):
+        Addon_Model.create_snow_material()
+        return{'FINISHED'}
+class OBJECT_OT_Button(bpy.types.Operator):
     bl_idname = "addmaterial.image"
     bl_label = "Image Material"
 
     def execute(self, context):
         Addon_Model.create_image_material()
+        #Addon_Model.add_icon(self.layout)
+        return{'FINISHED'}
+class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.default"
+    bl_label = "Start Using Addon"
+
+    def execute(self, context):
+        material = bpy.data.materials.new(name="Default Material")
+        bpy.context.scene.objects.active.active_material = material
         return{'FINISHED'}
 bpy.utils.register_module(__name__)
