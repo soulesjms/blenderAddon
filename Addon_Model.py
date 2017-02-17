@@ -48,8 +48,7 @@ def create_stone_material():
     links.new(diffuse.outputs[0], node_output.inputs[0])
     links.new(wave_texture.outputs[1], multiply.inputs[0])
     links.new(multiply.outputs[0], node_output.inputs[2])
-    
-    material.use_fake_user = True
+
     bpy.context.scene.objects.active.active_material = material
     
 
@@ -157,7 +156,6 @@ def create_metal_material():
     links.new(nodes['Group'].outputs[0], material_output.inputs[0])
     links.new(nodes['Group'].outputs[1], material_output.inputs[2])
 	
-    material.use_fake_user = True
     bpy.context.scene.objects.active.active_material = material
 	
 def create_car_material():
@@ -233,7 +231,6 @@ def create_car_material():
     gLinks.new(mix_shader.outputs[0], group_output.inputs[0])
     links.new(nodes['Group'].outputs[0], material_output.inputs[0])
     
-    material.use_fake_user = True
     bpy.context.scene.objects.active.active_material = material
     
 def create_skin_material():
@@ -311,8 +308,7 @@ def create_skin_material():
     gLinks.new(mix_shader2.outputs[0], group_output.inputs[0])
     gLinks.new(RGB_node.outputs[0], multiply_node.inputs[1])
     links.new(nodes['Group'].outputs[0], material_output.inputs[0])
-    
-    material.use_fake_user = True
+
     bpy.context.scene.objects.active.active_material = material
     
 def create_glass_material():
@@ -338,7 +334,6 @@ def create_glass_material():
     links = material.node_tree.links
     links.new(glossy_node.outputs[0], material_output.inputs[0])
     
-    material.use_fake_user = True
     bpy.context.scene.objects.active.active_material = material
 
 
@@ -368,9 +363,7 @@ def create_image_material():
     links.new(image_node.outputs[0], material_output.inputs[2])
     links.new(diffuse_node.outputs[0], material_output.inputs[0])
     
-    material.use_fake_user = True
     bpy.context.scene.objects.active.active_material = material
-
 
 
 def create_sand_material():
@@ -459,10 +452,162 @@ def create_sand_material():
     links.new(nodes['Group'].outputs[0], material_output.inputs[0])
     links.new(nodes['Group'].outputs[1], material_output.inputs[2])
     
-    material.use_fake_user = True
     bpy.context.scene.objects.active.active_material = material
     
-   
+#def add_icon(layout):
+#    layout.operator(addmaterial.glass.bl_idname, icon='UGLYPACKAGE')
+    
+    
+def create_rubber_material():
+    #create material if it doesn't exist 
+    if bpy.data.materials.find('Rubber Material') == -1:
+        material = bpy.data.materials.new(name="Rubber Material")
+    else:
+        material = bpy.data.materials["Rubber Material"]
+    
+    #create node group and name it and check if it's already made
+    if bpy.data.node_groups.find('rubberGroup') == -1:
+        rubber_group = bpy.data.node_groups.new(name='rubberGroup', type='ShaderNodeTree')
+    else:
+        rubber_group = bpy.data.node_groups['rubberGroup']
+    
+    #use nodes
+    material.use_nodes = True
+    
+	#set variables for nodes. gNodes for group nodes, nodes for material nodes
+    gNodes = rubber_group.nodes
+    nodes = material.node_tree.nodes
+    
+    #clear all nodes if there are any for a clean slate
+    for node in gNodes:
+        gNodes.remove(node)
+    for node in nodes:
+        nodes.remove(node)
+        
+    #create input node for group, and its inputs and their default values
+    rubber_group.inputs.clear()
+    rubber_group.inputs.new("NodeSocketColor", "Rubber Color")
+    rubber_group.inputs['Rubber Color'].default_value = (0.011, 0.011, 0.011, 1)
+    group_input = rubber_group.nodes.new("NodeGroupInput")
+    
+    #create the output Node for the group
+    group_output = rubber_group.nodes.new("NodeGroupOutput")
+    group_output.location = (200, 0)
+    rubber_group.outputs.clear()
+    rubber_group.outputs.new("NodeSocketShader", "Shader")
+    
+    tree = material.node_tree
+    group_node = tree.nodes.new("ShaderNodeGroup")
+    group_node.node_tree = rubber_group
+    
+    #create nodes
+    add_shader = gNodes.new(type='ShaderNodeAddShader')
+    mix_node = gNodes.new(type='ShaderNodeMixRGB')
+    diffuse_node = gNodes.new(type='ShaderNodeBsdfDiffuse')
+    translucent_node = gNodes.new(type='ShaderNodeBsdfTranslucent')
+    material_output = nodes.new(type='ShaderNodeOutputMaterial')
+    
+    #modify node default values
+    diffuse_node.inputs[1].default_value = 0
+    
+    #create link between nodes
+    gLinks = rubber_group.links
+    links = material.node_tree.links
+    gLinks.new(group_input.outputs[0], mix_node.inputs[1])
+    gLinks.new(group_input.outputs[0], diffuse_node.inputs[0])
+    gLinks.new(mix_node.outputs[0], translucent_node.inputs[0])
+    gLinks.new(translucent_node.outputs[0], add_shader.inputs[1])
+    gLinks.new(diffuse_node.outputs[0], add_shader.inputs[0])
+    gLinks.new(add_shader.outputs[0], group_output.inputs[0])
+    links.new(nodes['Group'].outputs[0], material_output.inputs[0])
+    
+    bpy.context.scene.objects.active.active_material = material
+    
+def create_snow_material():
+     #create material if it doesn't exist 
+    if bpy.data.materials.find('Snow Material') == -1:
+        material = bpy.data.materials.new(name="Snow Material")
+    else:
+        material = bpy.data.materials["Snow Material"]
+    
+    #create node group and name it and check if it's already made
+    if bpy.data.node_groups.find('snowGroup') == -1:
+        snow_group = bpy.data.node_groups.new(name='snowGroup', type='ShaderNodeTree')
+    else:
+        snow_group = bpy.data.node_groups['snowGroup']
+    
+    #use nodes
+    material.use_nodes = True
+    
+	#set variables for nodes. gNodes for group nodes, nodes for material nodes
+    gNodes = snow_group.nodes
+    nodes = material.node_tree.nodes
+    
+    #clear all nodes if there are any for a clean slate
+    for node in gNodes:
+        gNodes.remove(node)
+    for node in nodes:
+        nodes.remove(node)
+        
+    #create input node for group, and its inputs and their default values
+    snow_group.inputs.clear()
+    snow_group.inputs.new("NodeSocketColor", "Snow Color")
+    snow_group.inputs['Snow Color'].default_value = (1, 1, 1, 1)
+    snow_group.inputs.new("NodeSocketColor", "Reflection Color")
+    snow_group.inputs['Reflection Color'].default_value = (0.75, 0.75, 0.75, 1)
+    snow_group.inputs.new("NodeSocketFloat", "Scale")
+    snow_group.inputs['Scale'].default_value = 25.000
+    snow_group.inputs.new("NodeSocketFloat", "Detail")
+    snow_group.inputs['Detail'].default_value = 6.000
+    snow_group.inputs.new("NodeSocketFloat", "Distortion")
+    snow_group.inputs['Distortion'].default_value = 0.500
+    group_input = snow_group.nodes.new("NodeGroupInput")
+    
+    #create the output Node for the group
+    group_output = snow_group.nodes.new("NodeGroupOutput")
+    group_output.location = (200, 0)
+    snow_group.outputs.clear()
+    snow_group.outputs.new("NodeSocketShader", "Shader")
+    snow_group.outputs.new("NodeSocketFloat", "Value")
+    
+    tree = material.node_tree
+    group_node = tree.nodes.new("ShaderNodeGroup")
+    group_node.node_tree = snow_group
+    
+    #create nodes
+    noise_texture = gNodes.new(type='ShaderNodeTexNoise')
+    diffuse_node = gNodes.new(type='ShaderNodeBsdfDiffuse')
+    mix_node = gNodes.new(type='ShaderNodeMixShader')
+    subtract_node = gNodes.new(type='ShaderNodeMath')
+    glossy_node = gNodes.new(type='ShaderNodeBsdfGlossy')
+    material_output = nodes.new(type='ShaderNodeOutputMaterial')
+    
+    #modify node default values
+    subtract_node.operation = 'SUBTRACT'
+    glossy_node.inputs[1].default_value = 0.5
+    diffuse_node.inputs[1].default_value = 1
+    subtract_node.inputs[0].default_value = 1
+    mix_node.inputs[0].default_value = 0.3
+    
+    #create links
+    gLinks = snow_group.links
+    links = material.node_tree.links
+    gLinks.new(group_input.outputs[0], glossy_node.inputs[0])
+    gLinks.new(group_input.outputs[1], diffuse_node.inputs[0])
+    gLinks.new(group_input.outputs[1], glossy_node.inputs[0])
+    gLinks.new(group_input.outputs[2], noise_texture.inputs[1])
+    gLinks.new(group_input.outputs[3], noise_texture.inputs[2])
+    gLinks.new(group_input.outputs[4], noise_texture.inputs[3])
+    gLinks.new(noise_texture.outputs[1], subtract_node.inputs[1])
+    gLinks.new(diffuse_node.outputs[0], mix_node.inputs[1])
+    gLinks.new(glossy_node.outputs[0], mix_node.inputs[2])
+    gLinks.new(mix_node.outputs[0], group_output.inputs[0])
+    gLinks.new(subtract_node.outputs[0], group_output.inputs[1])
+    links.new(nodes['Group'].outputs[0], material_output.inputs[0])
+    links.new(nodes['Group'].outputs[1], material_output.inputs[2])
+    
+    bpy.context.scene.objects.active.active_material = material
+    
 ##########################################################
 # BEGIN MAIN
 ##########################################################
@@ -473,3 +618,5 @@ def create_sand_material():
 #create_glass_material()
 #create_image_material()
 #create_sand_material()
+#create_rubber_material()
+#create_snow_material()
