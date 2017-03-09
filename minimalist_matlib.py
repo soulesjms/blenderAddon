@@ -33,7 +33,7 @@ class myMaterial:
         self.group = mat_name + "_group"
         
         #create material if it doesn't exist 
-        if bpy.data.materials.find(mat_name + " Material") == -1:
+        if bpy.data.materials.find(mat_name + " Material") == -1: 
             self.material = bpy.data.materials.new(name=mat_name + " Material")
         else:
             self.material = bpy.data.materials[mat_name + " Material"]
@@ -1044,6 +1044,111 @@ def create_silk_material():
     
     bpy.context.scene.objects.active.active_material = material
     
+def create_dirt_material(): 
+    dirt_material = myMaterial("Dirt")
+    
+    nodes = dirt_material.nodes
+    gNodes = dirt_material.gNodes
+    dirt_group = dirt_material.mat_group
+    material = dirt_material.material
+    
+    #create input node for group, and its inputs and their default values
+    dirt_group.inputs.clear()
+    dirt_group.inputs.new("NodeSocketVector", "Vector")
+    dirt_group.inputs.new("NodeSocketColor", "Color 1")
+    dirt_group.inputs.new("NodeSocketColor", "Color 2")
+    dirt_group.inputs['Color 1'].default_value = (0.137, 0.078, 0.049, 1)
+    dirt_group.inputs['Color 2'].default_value = (0.035, 0.021, 0.014, 1)
+    dirt_group.inputs.new("NodeSocketFloat", "Texture Scale")
+    dirt_group.inputs['Texture Scale'].default_value = 7
+    group_input = dirt_group.nodes.new("NodeGroupInput")
+    
+    #create the output Node for the group
+    group_output = dirt_group.nodes.new("NodeGroupOutput")
+    group_output.location = (200, 0)
+    dirt_group.outputs.clear()
+    dirt_group.outputs.new("NodeSocketFloat", "Bump")
+    dirt_group.outputs.new("NodeSocketShader", "Shader")
+    
+    tree = material.node_tree
+    group_node = tree.nodes.new("ShaderNodeGroup")
+    group_node.node_tree = dirt_group
+    
+    #create nodes
+    mix_node = gNodes.new(type='ShaderNodeMixShader')
+    mix_node2 = gNodes.new(type='ShaderNodeMixShader')
+    fresnel_node = gNodes.new(type='ShaderNodeFresnel')
+    subsurf_scatter = gNodes.new(type='ShaderNodeSubsurfaceScattering')
+    fresnel_node2 = gNodes.new(type='ShaderNodeFresnel')
+    mix_node3 = gNodes.new(type='ShaderNodeMixShader')
+    glossy_node = gNodes.new(type='ShaderNodeBsdfGlossy')
+    diffuse_node = gNodes.new(type='ShaderNodeBsdfDiffuse')
+    diffuse_node2 = gNodes.new(type='ShaderNodeBsdfDiffuse')
+    invert_node = gNodes.new(type='ShaderNodeInvert') 
+    multiply_node = gNodes.new(type='ShaderNodeMath')
+    bump_node = gNodes.new(type='ShaderNodeBump')
+    musgrave_node = gNodes.new(type='ShaderNodeTexMusgrave')
+    musgrave_node2 = gNodes.new(type='ShaderNodeTexMusgrave')
+    subtract_node = gNodes.new(type='ShaderNodeMath')
+    mapping_node = gNodes.new(type='ShaderNodeMapping')
+    material_output = nodes.new('ShaderNodeOutputMaterial')
+    texture_coord = nodes.new('ShaderNodeTexCoord')
+    
+    #modify values
+    subtract_node.inputs[1].default_value = 2
+    musgrave_node2.inputs[2].default_value = 14
+    musgrave_node2.inputs[3].default_value = 0.1
+    musgrave_node2.inputs[4].default_value = 4.5
+    musgrave_node.inputs[2].default_value = 7
+    musgrave_node.inputs[3].default_value = 1.2
+    musgrave_node.inputs[4].default_value = 4.5
+    bump_node.inputs[0].default_value = 0.3
+    multiply_node.inputs[1].default_value = 4
+    fresnel_node2.inputs[0].default_value = 1.200
+    glossy_node.inputs[0].default_value = (0.704, 0.568, 0.398, 1)
+    glossy_node.inputs[1].default_value = 0.4
+    subsurf_scatter.inputs[0].default_value = (0.137, 0.078, 0.049, 1)
+    subsurf_scatter.falloff = 'CUBIC'
+    subtract_node.operation = 'SUBTRACT'
+    multiply_node.operation = 'MULTIPLY'
+    
+    #create Links
+    gLinks = dirt_group.links
+    links = material.node_tree.links
+    gLinks.new(group_input.outputs[0], mapping_node.inputs[0])
+    gLinks.new(group_input.outputs[1], diffuse_node.inputs[0])
+    gLinks.new(group_input.outputs[2], diffuse_node2.inputs[0])
+    gLinks.new(group_input.outputs[3], subtract_node.inputs[0])
+    gLinks.new(group_input.outputs[3], musgrave_node.inputs[1])
+    gLinks.new(mapping_node.outputs[0], musgrave_node2.inputs[0])
+    gLinks.new(mapping_node.outputs[0], musgrave_node.inputs[0])
+    gLinks.new(subtract_node.outputs[0], musgrave_node2.inputs[1])
+    gLinks.new(musgrave_node2.outputs[0], invert_node.inputs[1])
+    gLinks.new(musgrave_node2.outputs[0], bump_node.inputs[2])
+    gLinks.new(musgrave_node.outputs[0], multiply_node.inputs[0])
+    gLinks.new(multiply_node.outputs[0], group_output.inputs[0])
+    gLinks.new(bump_node.outputs[0], diffuse_node.inputs[2])
+    gLinks.new(bump_node.outputs[0], diffuse_node2.inputs[2])
+    gLinks.new(bump_node.outputs[0], glossy_node.inputs[2])
+    gLinks.new(invert_node.outputs[0], mix_node3.inputs[0])
+    gLinks.new(diffuse_node.outputs[0], mix_node3.inputs[2])
+    gLinks.new(diffuse_node2.outputs[0], mix_node3.inputs[1])
+    gLinks.new(mix_node3.outputs[0], mix_node2.inputs[1])
+    #gLinks.new(group_input.outputs[1], subsurf_scatter.inputs[0])
+    gLinks.new(fresnel_node2.outputs[0], mix_node2.inputs[0])
+    gLinks.new(glossy_node.outputs[0], mix_node2.inputs[2])
+    gLinks.new(mix_node2.outputs[0], mix_node.inputs[1])
+    gLinks.new(subsurf_scatter.outputs[0], mix_node.inputs[2])
+    gLinks.new(fresnel_node.outputs[0], mix_node.inputs[0])
+    gLinks.new(mix_node.outputs[0], group_output.inputs[1])
+    links.new(nodes['Group'].outputs[0], material_output.inputs[2])
+    links.new(nodes['Group'].outputs[1], material_output.inputs[0])
+    links.new(texture_coord.outputs[0], nodes['Group'].inputs[0])
+    
+    
+    bpy.context.scene.objects.active.active_material = material
+        
+    
 def create_leather_material(): 
     leather_material = myMaterial("Leather")
     
@@ -1203,6 +1308,33 @@ def create_leather_material():
     
     bpy.context.scene.objects.active.active_material = material
     
+def create_mirror_material():
+    #create material if it doesn't exist 
+    if bpy.data.materials.find('Mirror Material') == -1:
+        material = bpy.data.materials.new(name="Mirror Material")
+    else:
+        material = bpy.data.materials["Mirror Material"]
+    
+    #use nodes
+    material.use_nodes = True
+    
+    #set variables for nodes. gNodes for group nodes, nodes for material nodes
+    nodes = material.node_tree.nodes
+    
+    #clear all nodes if there are any for a clean slate
+    for node in nodes:
+        nodes.remove(node)
+        
+    material_output = nodes.new('ShaderNodeOutputMaterial')
+    glossy_node = nodes.new('ShaderNodeBsdfGlossy')
+    
+    glossy_node.inputs[1].default_value = 0
+    
+    links = material.node_tree.links
+    links.new(glossy_node.outputs[0], material_output.inputs[0])
+    
+    bpy.context.scene.objects.active.active_material = material
+    
 
 def create_light_material():
     #create material if it doesn't exist 
@@ -1229,6 +1361,72 @@ def create_light_material():
     
     bpy.context.scene.objects.active.active_material = material
     
+def create_asphalt_material():
+    asphalt_material = myMaterial("Asphalt")
+    
+    nodes = asphalt_material.nodes
+    gNodes = asphalt_material.gNodes
+    asphalt_group = asphalt_material.mat_group
+    material = asphalt_material.material
+    
+    #create input node for group, and its inputs and their default values
+    asphalt_group.inputs.clear()
+    asphalt_group.inputs.new("NodeSocketFloat", "Smoke Density")
+    asphalt_group.inputs.new("NodeSocketFloat", "Flame Density")
+    asphalt_group.inputs.new("NodeSocketFloat", "Temperature")
+    asphalt_group.inputs['Smoke Density'].default_value = 7.500
+    asphalt_group.inputs['Flame Density'].default_value = 5.000
+    asphalt_group.inputs['Temperature'].default_value = 1750.000
+    group_input = asphalt_group.nodes.new("NodeGroupInput")
+    
+    #create the output Node for the group
+    group_output = asphalt_group.nodes.new("NodeGroupOutput")
+    group_output.location = (200, 0)
+    asphalt_group.outputs.clear()
+    asphalt_group.outputs.new("NodeSocketShader", "Shader")
+    
+    tree = material.node_tree
+    group_node = tree.nodes.new("ShaderNodeGroup")
+    group_node.node_tree = asphalt_group
+    
+    #create nodes
+    add_node1 = gNodes.new(type='ShaderNodeAddShader')
+    add_node2 = gNodes.new(type='ShaderNodeAddShader')
+    vol_absorption = gNodes.new(type='ShaderNodeVolumeAbsorption')
+    vol_scatter = gNodes.new(type='ShaderNodeVolumeScatter')
+    emit_shader = gNodes.new(type='ShaderNodeEmission')
+    black_body = gNodes.new(type='ShaderNodeBlackbody')
+    multiply_node1 = gNodes.new(type='ShaderNodeMath')
+    multiply_node2 = gNodes.new(type='ShaderNodeMath')
+    flame_node = gNodes.new(type='ShaderNodeAttribute')
+    smoke_node = gNodes.new(type='ShaderNodeAttribute')
+    material_output = nodes.new('ShaderNodeOutputMaterial')
+    
+    #modify values
+    smoke_node.attribute_name = "density"
+    flame_node.attribute_name = "flame"
+    multiply_node1.operation = 'MULTIPLY'
+    multiply_node2.operation = 'MULTIPLY'
+    
+    #create Links
+    gLinks = asphalt_group.links
+    links = material.node_tree.links
+    gLinks.new(group_input.outputs[0], multiply_node1.inputs[1])
+    gLinks.new(group_input.outputs[1], multiply_node2.inputs[1])
+    gLinks.new(group_input.outputs[2], black_body.inputs[0])
+    gLinks.new(smoke_node.outputs[2], multiply_node1.inputs[0])
+    gLinks.new(flame_node.outputs[2], multiply_node2.inputs[0])
+    gLinks.new(multiply_node1.outputs[0], vol_absorption.inputs[1])
+    gLinks.new(multiply_node1.outputs[0], vol_scatter.inputs[1])
+    gLinks.new(multiply_node2.outputs[0], emit_shader.inputs[1])
+    gLinks.new(black_body.outputs[0], emit_shader.inputs[0])
+    gLinks.new(vol_absorption.outputs[0], add_node1.inputs[0])
+    gLinks.new(vol_scatter.outputs[0], add_node1.inputs[1])
+    gLinks.new(black_body.outputs[0], emit_shader.inputs[0])
+    gLinks.new(add_node1.outputs[0], add_node2.inputs[0])
+    gLinks.new(add_node2.outputs[0], group_output.inputs[0])
+    gLinks.new(emit_shader.outputs[0], add_node2.inputs[1])
+    links.new(nodes['Group'].outputs[0], material_output.inputs[1])
 
 class addon_menu(bpy.types.Menu):
     bl_label = "Material Lib"
@@ -1252,7 +1450,10 @@ class addon_menu(bpy.types.Menu):
         layout.operator("addmaterial.light")
         layout.operator("addmaterial.fire")
         layout.operator("addmaterial.silk")
+        layout.operator("addmaterial.dirt")
         layout.operator("addmaterial.leather")
+        layout.operator("addmaterial.mirror")
+        layout.operator("addmaterial.asphalt")
         layout.operator("addmaterial.image")
 
 class PanelOne(bpy.types.Panel):
@@ -1287,6 +1488,14 @@ class OBJECT_OT_Button(bpy.types.Operator):
     def execute(self, context):
         context.scene.render.engine = 'CYCLES'
         create_stone_material()
+        return{'FINISHED'}    
+class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.asphalt"
+    bl_label = "Asphalt Material"
+
+    def execute(self, context):
+        context.scene.render.engine = 'CYCLES'
+        create_asphalt_material()
         return{'FINISHED'}    
 class OBJECT_OT_Button(bpy.types.Operator):
     bl_idname = "addmaterial.skin"
@@ -1391,6 +1600,22 @@ class OBJECT_OT_Button(bpy.types.Operator):
     def execute(self, context):
         context.scene.render.engine = 'CYCLES'
         create_leather_material()
+        return{'FINISHED'}
+class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.mirror"
+    bl_label = "Mirror Material"
+
+    def execute(self, context):
+        context.scene.render.engine = 'CYCLES'
+        create_mirror_material()
+        return{'FINISHED'}
+class OBJECT_OT_Button(bpy.types.Operator):
+    bl_idname = "addmaterial.dirt"
+    bl_label = "Dirt Material"
+
+    def execute(self, context):
+        context.scene.render.engine = 'CYCLES'
+        create_dirt_material()
         return{'FINISHED'}
 class OBJECT_OT_Button(bpy.types.Operator):
     bl_idname = "addmaterial.image"
